@@ -1,5 +1,5 @@
 .checkout-submit {
   white-space: nowrap;
-  max-width: 120px;
-  overflow: hidden;
+  max-width: none;
+  overflow: visible;
 }
