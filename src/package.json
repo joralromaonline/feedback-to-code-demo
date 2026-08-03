@@ -1,0 +1,11 @@
+{
+  "name": "repo-basic-fixture",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lint": "node --check src/checkout.js",
+    "typecheck": "node --check src/checkout.js",
+    "test": "node --test src/checkout.test.js",
+    "build": "node --check src/checkout.js"
+  }
+}
