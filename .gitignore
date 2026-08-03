@@ -1,0 +1,6 @@
+node_modules/
+dist/
+.next/
+demo-app/.next/
+.env
+.DS_Store

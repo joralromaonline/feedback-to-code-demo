@@ -1,0 +1,18 @@
+.feedback-code-root { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #0f172a; }
+.feedback-code-launcher { position: fixed; right: 20px; bottom: 20px; z-index: 2147483647; border: 0; border-radius: 999px; background: #0f172a; color: #fff; padding: 11px 17px; font: inherit; font-weight: 700; box-shadow: 0 12px 30px rgba(15, 23, 42, .28); cursor: pointer; }
+.feedback-code-launcher:focus-visible, .feedback-code-panel button:focus-visible, .feedback-code-panel textarea:focus-visible { outline: 3px solid #38bdf8; outline-offset: 2px; }
+.feedback-code-hint { position: fixed; left: 50%; top: 20px; transform: translateX(-50%); z-index: 2147483647; border-radius: 999px; background: #0f172a; color: white; padding: 10px 16px; box-shadow: 0 8px 24px rgba(15, 23, 42, .25); }
+.feedback-code-panel { position: fixed; right: 20px; bottom: 20px; z-index: 2147483647; width: min(380px, calc(100vw - 40px)); border: 1px solid #cbd5e1; border-radius: 16px; background: #fff; padding: 20px; box-shadow: 0 24px 70px rgba(15, 23, 42, .3); }
+.feedback-code-panel h2 { margin: 0 0 8px; font-size: 20px; }
+.feedback-code-selected { margin: 0 0 16px; color: #475569; font-size: 13px; }
+.feedback-code-panel label { display: grid; gap: 8px; font-weight: 700; }
+.feedback-code-panel textarea { width: 100%; resize: vertical; box-sizing: border-box; border: 1px solid #94a3b8; border-radius: 10px; padding: 10px 12px; font: inherit; color: #0f172a; }
+.feedback-code-privacy { color: #64748b; font-size: 12px; line-height: 1.4; }
+.feedback-code-error { color: #b91c1c; font-size: 13px; }
+.feedback-code-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+.feedback-code-actions button { border-radius: 9px; padding: 9px 13px; font: inherit; font-weight: 700; cursor: pointer; }
+.feedback-code-primary { border: 1px solid #0f172a; background: #0f172a; color: #fff; }
+.feedback-code-secondary { border: 1px solid #cbd5e1; background: #fff; color: #0f172a; }
+.feedback-code-actions button:disabled { cursor: wait; opacity: .55; }
+.feedback-code-toast { position: fixed; right: 20px; bottom: 76px; z-index: 2147483647; display: flex; align-items: center; gap: 12px; max-width: min(440px, calc(100vw - 40px)); border-radius: 12px; background: #064e3b; color: white; padding: 12px 14px; box-shadow: 0 16px 36px rgba(6, 78, 59, .28); }
+.feedback-code-toast button { border: 0; background: transparent; color: white; font-size: 20px; cursor: pointer; }

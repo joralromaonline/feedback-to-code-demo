@@ -1,0 +1,38 @@
+{
+  "clientFeedbackId": "00000000-0000-4000-8000-000000000001",
+  "comment": "El texto del botón queda cortado en 1280 px; debe permanecer en una línea",
+  "page": {
+    "url": "http://localhost:3000/checkout",
+    "path": "/checkout",
+    "title": "Checkout"
+  },
+  "environment": "development",
+  "viewport": {
+    "width": 1280,
+    "height": 800,
+    "devicePixelRatio": 1
+  },
+  "selectedElement": {
+    "tagName": "button",
+    "accessibleName": "Continuar al pago",
+    "attributes": {
+      "data-feedback-id": "checkout-submit"
+    },
+    "testId": "checkout-submit",
+    "feedbackId": "checkout-submit",
+    "boundingBox": {
+      "x": 100,
+      "y": 200,
+      "width": 120,
+      "height": 40
+    },
+    "ancestorSummary": [
+      { "tagName": "form" }
+    ]
+  },
+  "client": {
+    "sdkVersion": "0.1.0",
+    "userAgent": "fixture"
+  },
+  "appRevision": "fixture-base-sha"
+}
