@@ -13,21 +13,30 @@ export function createFeedbackQueue(redisUrl: string): { queue: Queue; connectio
   return { queue, connection };
 }
 
-export async function enqueueFeedback(queue: Queue, feedbackId: string): Promise<void> {
+export type EnqueueFeedbackResult = "enqueued" | "retried" | "already_queued" | "active";
+
+export async function enqueueFeedback(queue: Queue, feedbackId: string): Promise<EnqueueFeedbackResult> {
   const jobId = `feedback-${feedbackId}`;
   const existing = await queue.getJob(jobId);
   if (existing) {
-    if (await existing.getState() === "failed") await existing.retry();
-    return;
+    const state = await existing.getState();
+    if (state === "failed") {
+      await existing.remove();
+    } else if (state === "completed") {
+      await existing.remove();
+    } else {
+      return state === "active" ? "active" : "already_queued";
+    }
   }
   const options: JobsOptions = {
     jobId,
-    attempts: 5,
+    attempts: 2,
     backoff: { type: "exponential", delay: 2_000 },
     removeOnComplete: { age: 86_400, count: 1_000 },
     removeOnFail: { age: 604_800, count: 5_000 }
   };
   await queue.add("feedback.received", { feedbackId }, options);
+  return existing ? "retried" : "enqueued";
 }
 
 export function createFeedbackWorker(redisUrl: string, processor: Processor, concurrency = 1): { worker: Worker; connection: Redis } {

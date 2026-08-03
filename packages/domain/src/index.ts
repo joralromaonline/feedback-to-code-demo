@@ -216,7 +216,7 @@ const TRANSITIONS: Record<FeedbackStatus, readonly FeedbackStatus[]> = {
   closed: [],
   needs_human_review: [],
   blocked: ["queued", "failed"],
-  failed: ["queued"],
+  failed: ["queued", "classifying"],
   classification_failed: ["classifying", "failed"]
 };
 

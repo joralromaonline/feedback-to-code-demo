@@ -164,6 +164,11 @@ export async function buildProductionApi(config: RuntimeConfig = getConfig()): P
     const feedback = await store.getFeedback(request.params.id);
     if (!feedback) return reply.code(404).send({ error: "Feedback not found", requestId: request.id });
     if (!["failed", "blocked", "classification_failed"].includes(feedback.status)) return reply.code(409).send({ error: "Feedback is not retryable in its current state", requestId: request.id });
+    const existingJob = await queue.getJob(`feedback-${feedback.id}`);
+    if (existingJob && await existingJob.getState() === "active") {
+      return reply.code(409).send({ error: "The previous attempt is still stopping; retry after it finishes", requestId: request.id });
+    }
+    await store.clearFailure(feedback.id);
     await enqueueFeedback(queue, feedback.id);
     return reply.code(202).send({ accepted: true, feedbackId: feedback.id, requestId: request.id });
   });
@@ -172,9 +177,19 @@ export async function buildProductionApi(config: RuntimeConfig = getConfig()): P
     if (!internalAuthorized(request, config)) return reply.code(401).send({ error: "Unauthorized", requestId: request.id });
     const feedback = await store.getFeedback(request.params.id);
     if (!feedback) return reply.code(404).send({ error: "Feedback not found", requestId: request.id });
-    if (!["agent_running", "validating"].includes(feedback.status)) return reply.code(409).send({ error: "Feedback cannot be cancelled in its current state", requestId: request.id });
+    const cancelTargets: Partial<Record<FeedbackStatus, FeedbackStatus>> = {
+      received: "failed",
+      classifying: "classification_failed",
+      classified: "failed",
+      issue_created: "failed",
+      queued: "failed",
+      agent_running: "blocked",
+      validating: "blocked"
+    };
+    const target = cancelTargets[feedback.status];
+    if (!target) return reply.code(409).send({ error: "Feedback cannot be cancelled in its current state", requestId: request.id });
     await store.setFailure(feedback.id, "cancelled", "Cancelled by an internal operator");
-    await store.transition(feedback.id, "blocked" as FeedbackStatus, { reason: "cancelled" });
+    await store.transition(feedback.id, target, { reason: "cancelled" });
     return reply.send({ cancelled: true, feedbackId: feedback.id, requestId: request.id });
   });
 

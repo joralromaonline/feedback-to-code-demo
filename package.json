@@ -20,6 +20,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:e2e": "vitest run --config vitest.e2e.config.ts",
+    "test:nvidia": "tsx scripts/nvidia-smoke.ts",
+    "test:nvidia:tools": "tsx scripts/nvidia-tools-smoke.ts",
     "build": "tsc --noEmit && next build demo-app"
   },
   "dependencies": {

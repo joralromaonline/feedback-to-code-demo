@@ -32,11 +32,21 @@ export const RuntimeConfigSchema = z.object({
   INTERNAL_SERVICE_TOKEN: z.string().min(16),
   PUBLIC_DEMO_PROJECT_KEY: z.string().min(12),
   INTEGRATION_MODE: z.enum(["mock", "real"]).default("mock"),
+  LLM_PROVIDER: z.enum(["openai", "nvidia"]).default("openai"),
   OPENAI_API_KEY: z.string().optional().default(""),
   OPENAI_MODEL: z.string().optional().default("gpt-5.6"),
   OPENAI_TIMEOUT_MS: integerFromEnv(1_000, 600_000).default(120_000),
   OPENAI_MAX_AGENT_TURNS: integerFromEnv(1, 100).default(40),
   OPENAI_REASONING_EFFORT: z.enum(["none", "low", "medium", "high", "xhigh", "max"]).default("medium"),
+  NVIDIA_API_KEY: z.string().optional().default(""),
+  NVIDIA_BASE_URL: z.url().default("https://integrate.api.nvidia.com/v1"),
+  NVIDIA_MODEL: z.string().min(1).default("deepseek-ai/deepseek-v4-pro"),
+  NVIDIA_TIMEOUT_MS: integerFromEnv(1_000, 600_000).default(60_000),
+  NVIDIA_CLASSIFICATION_TIMEOUT_MS: integerFromEnv(5_000, 300_000).default(90_000),
+  NVIDIA_AGENT_TIMEOUT_MS: integerFromEnv(30_000, 1_800_000).default(600_000),
+  NVIDIA_MAX_AGENT_TURNS: integerFromEnv(1, 100).default(12),
+  NVIDIA_MAX_OUTPUT_TOKENS: integerFromEnv(1, 16_384).default(4_096),
+  NVIDIA_REASONING_EFFORT: z.enum(["none", "high", "max"]).default("none"),
   GITHUB_APP_ID: z.string().optional().default(""),
   GITHUB_PRIVATE_KEY_BASE64: z.string().optional().default(""),
   GITHUB_WEBHOOK_SECRET: z.string().optional().default(""),
@@ -54,7 +64,9 @@ export const RuntimeConfigSchema = z.object({
   LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"]).default("info")
 }).superRefine((value, context) => {
   if (value.INTEGRATION_MODE !== "real") return;
-  const required: Array<keyof typeof value> = ["OPENAI_API_KEY", "OPENAI_MODEL", "GITHUB_APP_ID", "GITHUB_PRIVATE_KEY_BASE64", "GITHUB_INSTALLATION_ID", "GITHUB_OWNER", "GITHUB_REPO", "GITHUB_WEBHOOK_SECRET"];
+  const required: Array<keyof typeof value> = ["GITHUB_APP_ID", "GITHUB_PRIVATE_KEY_BASE64", "GITHUB_INSTALLATION_ID", "GITHUB_OWNER", "GITHUB_REPO", "GITHUB_WEBHOOK_SECRET"];
+  if (value.LLM_PROVIDER === "openai") required.push("OPENAI_API_KEY", "OPENAI_MODEL");
+  else required.push("NVIDIA_API_KEY", "NVIDIA_BASE_URL", "NVIDIA_MODEL");
   for (const key of required) {
     if (!value[key]) context.addIssue({ code: "custom", path: [key], message: `${key} is required when INTEGRATION_MODE=real` });
   }
@@ -74,6 +86,15 @@ export function getConfig(overrides: Record<string, unknown> = {}): RuntimeConfi
 export function githubPrivateKey(config: RuntimeConfig): string {
   if (!config.GITHUB_PRIVATE_KEY_BASE64) return "";
   return Buffer.from(config.GITHUB_PRIVATE_KEY_BASE64, "base64").toString("utf8");
+}
+
+export function configuredLLMModel(config: RuntimeConfig): string {
+  if (config.INTEGRATION_MODE !== "real") return "mock";
+  return config.LLM_PROVIDER === "nvidia" ? config.NVIDIA_MODEL : config.OPENAI_MODEL;
+}
+
+export function configuredLLMMaxAgentTurns(config: RuntimeConfig): number {
+  return config.LLM_PROVIDER === "nvidia" ? config.NVIDIA_MAX_AGENT_TURNS : config.OPENAI_MAX_AGENT_TURNS;
 }
 
 export function clearConfigCache(): void {

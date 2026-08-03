@@ -6,7 +6,7 @@ Implementación aislada del MVP descrito en `PRODUCT_SPEC.md`, con flujo vertica
 SDK Next.js → Fastify API → PostgreSQL/MinIO → BullMQ/Redis → clasificación → GitHub Issue → agente controlado → validaciones → Pull Request
 ```
 
-El modo `mock` usa la infraestructura real y adaptadores deterministas para OpenAI y GitHub. El modo `real` usa OpenAI Responses API y una GitHub App; en ninguno de los dos existe merge automático ni push a la rama base.
+El modo `mock` usa la infraestructura real y adaptadores deterministas para LLM y GitHub. El modo `real` admite OpenAI Responses API o NVIDIA NIM Chat Completions junto con una GitHub App; en ninguno de los dos existe merge automático ni push a la rama base.
 
 ## Quickstart con Docker
 
@@ -57,9 +57,9 @@ El E2E verifica ingestión idempotente, screenshot en MinIO, PostgreSQL, cola Re
 ## Modos de integración
 
 - `INTEGRATION_MODE=mock`: no necesita claves externas. Crea Issue y PR deterministas y modifica `tests/fixtures/repo-basic` dentro de un workspace efímero.
-- `INTEGRATION_MODE=real`: requiere `OPENAI_API_KEY` y credenciales de una GitHub App. Clona el repositorio autorizado, crea una rama `feedback/*`, ejecuta sólo herramientas tipadas y scripts allowlisted, sube esa rama y abre un PR para revisión humana.
+- `INTEGRATION_MODE=real`: requiere credenciales de una GitHub App y la clave del proveedor elegido en `LLM_PROVIDER=openai|nvidia`. Clona el repositorio autorizado, crea una rama `feedback/*`, ejecuta sólo herramientas tipadas y scripts allowlisted, sube esa rama y abre un PR para revisión humana.
 
-Consulta [configuración local](docs/local-development.md), [integración del SDK](docs/sdk-integration.md) y [GitHub App + OpenAI](docs/github-app.md).
+Consulta [configuración local](docs/local-development.md), [integración del SDK](docs/sdk-integration.md) y [GitHub App + proveedores LLM](docs/github-app.md).
 
 ## Organización
 
@@ -67,7 +67,7 @@ Consulta [configuración local](docs/local-development.md), [integración del SD
 - `apps/worker`: consumidor BullMQ y composición del agente.
 - `packages/sdk`: cliente browser-safe, overlay React, selección, screenshot y redacción.
 - `packages/db`, `queue`, `storage`: PostgreSQL, Redis/BullMQ y S3/MinIO.
-- `packages/openai`, `github`: adaptadores mock y reales.
+- `packages/openai`, `github`: adaptadores mock, OpenAI, NVIDIA NIM y GitHub.
 - `packages/agent`: workspace efímero, herramientas tipadas, validación, commit y PR.
 - `demo-app`: aplicación Next.js separada que consume el SDK.
 - `tests/fixtures/repo-basic`: repositorio objetivo determinista del E2E.
@@ -80,4 +80,3 @@ Consulta [configuración local](docs/local-development.md), [integración del SD
 - El agente no recibe shell arbitrario, no puede escapar del workspace y el diff se revisa contra patrones de secretos.
 - Un caso ambiguo o no reproducible termina en `needs_human_review`.
 - No hay endpoint ni código de merge automático.
-

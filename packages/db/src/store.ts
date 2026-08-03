@@ -160,6 +160,10 @@ export class PostgresFeedbackStore {
     await this.pool.query("UPDATE feedback SET failure_code=$2, failure_message=$3, updated_at=now() WHERE id=$1", [id, code, message.slice(0, 500)]);
   }
 
+  async clearFailure(id: string): Promise<void> {
+    await this.pool.query("UPDATE feedback SET failure_code=NULL, failure_message=NULL, updated_at=now() WHERE id=$1", [id]);
+  }
+
   async createAttachment(input: AttachmentRecord): Promise<void> {
     await this.pool.query(
       `INSERT INTO attachments(id, project_id, feedback_id, kind, storage_key, mime_type, byte_size, sha256, redaction_applied, status)

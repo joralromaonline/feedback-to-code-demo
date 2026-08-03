@@ -2,15 +2,20 @@ import { spawn } from "node:child_process";
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { buildIssueBody, buildIssueTitle } from "../../contracts/src/index.ts";
-import type { RuntimeConfig } from "../../config/src/index.ts";
+import { configuredLLMMaxAgentTurns, configuredLLMModel, type RuntimeConfig } from "../../config/src/index.ts";
 import type { PostgresFeedbackStore } from "../../db/src/store.ts";
 import type { GitProvider } from "../../github/src/index.ts";
-import type { LLMProvider, OpenAIResponsesProvider } from "../../openai/src/index.ts";
+import { LLMProviderError, supportsCodeAgent, type LLMProvider } from "../../openai/src/index.ts";
 import { slugify, type FeedbackRecord, type ValidationReport } from "../../domain/src/index.ts";
 import { createAgentToolDefinitions } from "./tool-definitions.ts";
 import { WorkspaceTools } from "./tools.ts";
 
 interface ProcessResult { exitCode: number; output: string; durationMs: number; }
+interface ProcessJobContext { attemptNumber?: number; maxAttempts?: number; }
+
+function workerLog(event: string, feedbackId: string, details: Record<string, unknown> = {}): void {
+  console.info(JSON.stringify({ level: "info", event, feedbackId, ...details }));
+}
 
 async function runProcess(command: string, args: string[], options: { cwd: string; env?: NodeJS.ProcessEnv; timeoutMs?: number; input?: string }): Promise<ProcessResult> {
   const started = Date.now();
@@ -44,7 +49,7 @@ function gitAuthenticationEnv(token: string): NodeJS.ProcessEnv {
 function assertSafeDiff(diff: string): void {
   const forbidden = [
     /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/,
-    /(?:OPENAI_API_KEY|GITHUB_PRIVATE_KEY|DATABASE_URL|S3_SECRET_KEY)\s*=\s*[^\s"']{8,}/,
+    /(?:OPENAI_API_KEY|NVIDIA_API_KEY|GITHUB_PRIVATE_KEY|DATABASE_URL|S3_SECRET_KEY)\s*=\s*[^\s"']{8,}/,
     /\bgh[pousr]_[A-Za-z0-9_]{20,}\b/,
     /\bAKIA[0-9A-Z]{16}\b/
   ];
@@ -69,25 +74,55 @@ export class ProductionAgentWorker {
     this.config = config;
   }
 
-  async process(feedbackId: string): Promise<void> {
+  async process(feedbackId: string, context: ProcessJobContext = {}): Promise<void> {
+    const attemptNumber = Math.max(1, context.attemptNumber || 1);
+    const maxAttempts = Math.max(attemptNumber, context.maxAttempts || 1);
     let feedback = await this.store.getFeedback(feedbackId);
     if (!feedback || feedback.status === "pr_opened" || feedback.status === "merged" || feedback.status === "closed" || feedback.status === "needs_human_review") return;
+    if (feedback.failureCode === "cancelled") {
+      workerLog("feedback.cancelled", feedbackId, { status: feedback.status, attemptNumber, maxAttempts });
+      return;
+    }
+    workerLog("feedback.processing_started", feedbackId, { status: feedback.status, attemptNumber, maxAttempts });
 
     if (!feedback.classification) {
-      if (feedback.status === "received" || feedback.status === "classification_failed") await this.store.transition(feedbackId, "classifying");
+      if (feedback.status === "received" || feedback.status === "classification_failed" || feedback.status === "failed") await this.store.transition(feedbackId, "classifying");
+      workerLog("classification.started", feedbackId, { attemptNumber, maxAttempts });
       try {
         const classification = await this.llm.classify({ feedback, feedbackId });
-        await this.store.setClassification(feedbackId, classification);
-        await this.store.transition(feedbackId, "classified", { type: classification.type, confidence: classification.confidence });
-      } catch {
-        await this.store.setFailure(feedbackId, "classification_failed", "The classifier did not return a valid structured result");
         const current = await this.store.getFeedback(feedbackId);
-        if (current?.status === "classifying") await this.store.transition(feedbackId, "classification_failed", { retryable: true });
-        throw new Error("Classification failed");
+        if (!current || current.failureCode === "cancelled") {
+          workerLog("classification.discarded", feedbackId, { reason: "cancelled" });
+          return;
+        }
+        await this.store.setClassification(feedbackId, classification);
+        await this.store.clearFailure(feedbackId);
+        await this.store.transition(feedbackId, "classified", { type: classification.type, confidence: classification.confidence });
+        workerLog("classification.completed", feedbackId, { type: classification.type, confidence: classification.confidence });
+      } catch (error) {
+        const current = await this.store.getFeedback(feedbackId);
+        if (!current || current.failureCode === "cancelled") {
+          workerLog("classification.discarded", feedbackId, { reason: "cancelled" });
+          return;
+        }
+        const providerError = error instanceof LLMProviderError ? error : undefined;
+        const code = providerError?.code || "classification_failed";
+        const retryable = providerError?.retryable ?? true;
+        const finalAttempt = !retryable || attemptNumber >= maxAttempts;
+        await this.store.setFailure(feedbackId, code, `Classification stopped: ${code}`);
+        if (current.status === "classifying" && finalAttempt) {
+          await this.store.transition(feedbackId, "classification_failed", { retryable: false, code, attemptNumber, maxAttempts });
+        } else if (!finalAttempt) {
+          await this.store.appendEvent(feedbackId, "classification.retry_scheduled", { code, attemptNumber, maxAttempts });
+        }
+        workerLog("classification.failed", feedbackId, { code, retryable: retryable && !finalAttempt, attemptNumber, maxAttempts });
+        if (!finalAttempt) throw error;
+        return;
       }
     }
 
     feedback = (await this.store.getFeedback(feedbackId)) as FeedbackRecord;
+    if (!feedback || feedback.failureCode === "cancelled") return;
     const classification = feedback.classification;
     const project = await this.store.getProject(feedback.projectId);
     if (!classification || !project) throw new Error("Feedback classification or project is missing");
@@ -126,7 +161,7 @@ export class ProductionAgentWorker {
     feedback = (await this.store.getFeedback(feedbackId)) as FeedbackRecord;
     if (feedback.status === "queued") await this.store.transition(feedbackId, "agent_running");
 
-    const run = await this.store.createAgentRun(feedbackId, project.id, this.config.INTEGRATION_MODE === "real" ? this.config.OPENAI_MODEL : "mock");
+    const run = await this.store.createAgentRun(feedbackId, project.id, configuredLLMModel(this.config));
     const branchName = `feedback/${feedbackId}-${slugify(classification.summary)}`;
     const workspaceParent = resolve(this.config.WORKSPACE_ROOT);
     mkdirSync(workspaceParent, { recursive: true });
@@ -169,16 +204,21 @@ export class ProductionAgentWorker {
         }
         tools.applyPatch(`*** Begin Patch\n*** Update File: src/checkout.css\n@@\n-.checkout-submit {\n-  white-space: nowrap;\n-  max-width: 120px;\n-  overflow: hidden;\n-}\n+.checkout-submit {\n+  white-space: nowrap;\n+  max-width: none;\n+  overflow: visible;\n+}\n*** End Patch`);
       } else {
-        const provider = this.llm as OpenAIResponsesProvider;
-        if (typeof provider.runAgent !== "function") throw new Error("Configured LLM provider does not support code-agent execution");
-        const agentResult = await provider.runAgent({
+        if (!supportsCodeAgent(this.llm)) throw new Error("Configured LLM provider does not support code-agent execution");
+        const agentResult = await this.llm.runAgent({
           feedbackId,
           issueNumber: feedback.issueNumber as number,
           feedback,
           classification,
           repositoryInstructions: repositoryInstructions(workspace),
-          maxTurns: this.config.OPENAI_MAX_AGENT_TURNS
+          maxTurns: configuredLLMMaxAgentTurns(this.config)
         }, createAgentToolDefinitions(tools));
+        const current = await this.store.getFeedback(feedbackId);
+        if (!current || current.failureCode === "cancelled") {
+          await this.store.finishAgentRun(run.id, { status: "needs_human_review", summary: "Cancelled by an internal operator", blockedReason: "cancelled" });
+          workerLog("agent.cancelled", feedbackId, { turns: agentResult.turns });
+          return;
+        }
         if (agentResult.status !== "completed") {
           await this.store.setFailure(feedbackId, agentResult.reason || "agent_requires_review", agentResult.summary);
           await this.store.finishAgentRun(run.id, { status: agentResult.status, summary: agentResult.summary, blockedReason: agentResult.reason });
@@ -235,11 +275,17 @@ export class ProductionAgentWorker {
       await this.git.addComment({ issueNumber: feedback.issueNumber as number, body: `PR abierta: ${pullRequest.url}. El merge requiere revisión humana.` });
       if (this.git.updateIssueStatus && project.githubInstallationId) await this.git.updateIssueStatus({ issueNumber: feedback.issueNumber as number, owner: project.githubOwner, repo: project.githubRepo, installationId: project.githubInstallationId, status: "pr-opened" });
     } catch (error) {
+      const current = await this.store.getFeedback(feedbackId);
+      if (current?.failureCode === "cancelled") {
+        await this.store.finishAgentRun(run.id, { status: "needs_human_review", summary: "Cancelled by an internal operator", blockedReason: "cancelled" });
+        workerLog("agent.cancelled", feedbackId);
+        return;
+      }
       const safeMessage = error instanceof Error ? error.message.replace(/(?:gh[pousr]_[A-Za-z0-9_]+|Bearer\s+\S+)/g, "[REDACTED]").slice(0, 500) : "Unknown worker error";
       await this.store.setFailure(feedbackId, "agent_failed", safeMessage);
       await this.store.finishAgentRun(run.id, { status: "failed", summary: safeMessage });
-      const current = await this.store.getFeedback(feedbackId);
-      if (current && ["agent_running", "validating"].includes(current.status)) await this.store.transition(feedbackId, "failed", { retryable: true });
+      const latest = await this.store.getFeedback(feedbackId);
+      if (latest && ["agent_running", "validating"].includes(latest.status)) await this.store.transition(feedbackId, "failed", { retryable: true });
       throw error;
     } finally {
       rmSync(workspace, { recursive: true, force: true });

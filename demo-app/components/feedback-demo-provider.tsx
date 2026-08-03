@@ -3,7 +3,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { FeedbackProvider } from "@feedback-code/next/react";
 
-type PublicState = { status?: string; issueUrl?: string; pullRequestUrl?: string };
+type PublicState = { status?: string; issueUrl?: string; pullRequestUrl?: string; message?: string };
 
 export function FeedbackDemoProvider({ children }: { children: ReactNode }) {
   const [feedbackId, setFeedbackId] = useState("");
@@ -13,19 +13,29 @@ export function FeedbackDemoProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!feedbackId) return;
     let cancelled = false;
+    let timer: number | undefined;
+    const startedAt = Date.now();
+    const schedule = (poll: () => Promise<void>, delayMs: number) => {
+      if (cancelled) return;
+      if (Date.now() - startedAt >= 30 * 60_000) {
+        setState((current) => ({ ...current, status: "poll_timeout", message: "La consulta superó 30 minutos. Revisa los logs del worker." }));
+        return;
+      }
+      timer = window.setTimeout(() => void poll(), delayMs);
+    };
     const poll = async () => {
       try {
         const response = await fetch(`${apiUrl}/v1/feedback/${feedbackId}`);
         const next = await response.json() as PublicState;
         if (cancelled) return;
         setState(next);
-        if (!["pr_opened", "blocked", "failed"].includes(next.status || "")) window.setTimeout(poll, 1000);
+        if (!["pr_opened", "blocked", "failed"].includes(next.status || "")) schedule(poll, 2_000);
       } catch {
-        if (!cancelled) window.setTimeout(poll, 1500);
+        schedule(poll, 3_000);
       }
     };
     void poll();
-    return () => { cancelled = true; };
+    return () => { cancelled = true; if (timer) window.clearTimeout(timer); };
   }, [apiUrl, feedbackId]);
 
   return (
@@ -43,6 +53,7 @@ export function FeedbackDemoProvider({ children }: { children: ReactNode }) {
           <span>Flujo</span>
           <strong>{state.status || "received"}</strong>
           <small>{feedbackId}</small>
+          {state.message ? <small>{state.message}</small> : null}
           {state.issueUrl ? <a href={state.issueUrl} target="_blank" rel="noreferrer">Issue</a> : null}
           {state.pullRequestUrl ? <a href={state.pullRequestUrl} target="_blank" rel="noreferrer">Pull Request</a> : null}
         </aside>

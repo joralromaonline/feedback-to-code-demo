@@ -33,10 +33,10 @@ curl http://localhost:3001/internal/health \
 | `NEXT_PUBLIC_FEEDBACK_*` | Configuración del SDK demo | Pública |
 | `DATABASE_URL`, `REDIS_URL`, `S3_*` | Persistencia, cola y screenshots | Servidor |
 | `INTERNAL_SERVICE_TOKEN` | Endpoints operativos | Servidor |
-| `OPENAI_*` | Clasificación y agente | Servidor/worker |
+| `LLM_PROVIDER`, `OPENAI_*`, `NVIDIA_*` | Clasificación y agente | Servidor/worker |
 | `GITHUB_*` | GitHub App y webhook | Servidor/worker |
 
-La API valida todas las variables al iniciar. En `mock`, OpenAI y GitHub pueden estar vacías; en `real`, son obligatorias.
+La API valida todas las variables al iniciar. En `mock`, LLM y GitHub pueden estar vacías; en `real`, exige GitHub y sólo las credenciales del `LLM_PROVIDER` seleccionado.
 
 ## Endpoints operativos
 
@@ -77,4 +77,3 @@ docker-compose ps
 - Screenshot `failed`: el texto continúa por el flujo y el evento registra un mensaje seguro.
 
 Los comandos ausentes en el repositorio objetivo aparecen como `not_configured`; no se reportan como ejecutados.
-

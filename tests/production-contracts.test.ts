@@ -22,6 +22,36 @@ describe("production contracts", () => {
     if (!parsed.success) expect(parsed.error.issues.map((issue) => issue.path[0])).toContain("OPENAI_API_KEY");
   });
 
+  test("real NVIDIA mode requires NVIDIA credentials instead of OpenAI credentials", () => {
+    const missing = RuntimeConfigSchema.safeParse({ ...baseConfig, INTEGRATION_MODE: "real", LLM_PROVIDER: "nvidia" });
+    expect(missing.success).toBe(false);
+    if (!missing.success) {
+      const paths = missing.error.issues.map((issue) => issue.path[0]);
+      expect(paths).toContain("NVIDIA_API_KEY");
+      expect(paths).not.toContain("OPENAI_API_KEY");
+    }
+
+    const config = RuntimeConfigSchema.parse({
+      ...baseConfig,
+      INTEGRATION_MODE: "real",
+      LLM_PROVIDER: "nvidia",
+      NVIDIA_API_KEY: "nvapi-test-only",
+      GITHUB_APP_ID: "123",
+      GITHUB_PRIVATE_KEY_BASE64: "dGVzdA==",
+      GITHUB_WEBHOOK_SECRET: "webhook-secret",
+      GITHUB_INSTALLATION_ID: "456",
+      GITHUB_OWNER: "owner",
+      GITHUB_REPO: "repo"
+    });
+    expect(config.NVIDIA_MODEL).toBe("deepseek-ai/deepseek-v4-pro");
+    expect(config.NVIDIA_TIMEOUT_MS).toBe(60_000);
+    expect(config.NVIDIA_CLASSIFICATION_TIMEOUT_MS).toBe(90_000);
+    expect(config.NVIDIA_AGENT_TIMEOUT_MS).toBe(600_000);
+    expect(config.NVIDIA_MAX_AGENT_TURNS).toBe(12);
+    expect(config.NVIDIA_MAX_OUTPUT_TOKENS).toBe(4_096);
+    expect(config.OPENAI_API_KEY).toBe("");
+  });
+
   test("mock mode accepts infrastructure configuration without external secrets", () => {
     const config = RuntimeConfigSchema.parse({ ...baseConfig, INTEGRATION_MODE: "mock", GITHUB_INSTALLATION_ID: "" });
     expect(config.INTEGRATION_MODE).toBe("mock");
