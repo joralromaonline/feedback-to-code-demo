@@ -3,9 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "lint": "node --check src/checkout.js",
-    "typecheck": "node --check src/checkout.js",
-    "test": "node --test src/checkout.test.js",
-    "build": "node --check src/checkout.js"
+    "lint": "node --check src/checkout.js && node --check src/product.js && node --check src/feedback-sdk.js",
+    "typecheck": "node --check src/checkout.js && node --check src/product.js && node --check src/feedback-sdk.js",
+    "test": "node --test src/checkout.test.js src/product.test.js",
+    "build": "node --check src/checkout.js && node --check src/product.js && node --check src/feedback-sdk.js"
   }
 }
