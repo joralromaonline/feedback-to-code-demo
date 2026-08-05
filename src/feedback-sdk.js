@@ -112,7 +112,9 @@ function composeFeedback(selected) {
       close(); toast("Feedback received. The agent is now working."); mountDock(body.feedbackId);
     } catch (submissionError) {
       error.hidden = false;
-      error.textContent = submissionError instanceof Error ? submissionError.message : "Unable to send feedback";
+      error.textContent = submissionError instanceof TypeError
+        ? "The public feedback API is unreachable. Verify that the Cloudflare tunnel is running, then retry."
+        : submissionError instanceof Error ? submissionError.message : "Unable to send feedback";
       send.disabled = false;
     }
   });
