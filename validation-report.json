@@ -1,0 +1,44 @@
+{
+  "generatedAt": "2026-08-05T16:12:55.595Z",
+  "results": [
+    {
+      "commandId": "lint",
+      "status": "passed",
+      "durationMs": 326,
+      "exitCode": 0,
+      "output": "\n> lint\n> node --check src/checkout.js\n\n"
+    },
+    {
+      "commandId": "typecheck",
+      "status": "passed",
+      "durationMs": 84,
+      "exitCode": 0,
+      "output": "\n> typecheck\n> node --check src/checkout.js\n\n"
+    },
+    {
+      "commandId": "test",
+      "status": "passed",
+      "durationMs": 118,
+      "exitCode": 0,
+      "output": "\n> test\n> node --test src/checkout.test.js\n\n✔ checkout submit keeps its label visible (2.400028ms)\nℹ tests 1\nℹ suites 0\nℹ pass 1\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 32.801526\n"
+    },
+    {
+      "commandId": "build",
+      "status": "passed",
+      "durationMs": 92,
+      "exitCode": 0,
+      "output": "\n> build\n> node --check src/checkout.js\n\n"
+    },
+    {
+      "commandId": "playwright",
+      "status": "not_configured",
+      "durationMs": 0,
+      "reason": "Script is not configured"
+    }
+  ],
+  "changedFiles": [
+    "src/checkout.css"
+  ],
+  "diffStat": "1 file(s) changed",
+  "visualCheck": "not_reproducible"
+}
