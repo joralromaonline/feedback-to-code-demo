@@ -15,3 +15,19 @@ test("published page uses Lucide and stable feedback targets", async () => {
   assert.match(html, /data-feedback-id="transactions-panel"/);
   assert.match(html, /src\/feedback-sdk\.js/);
 });
+
+test("automation approves only the validated feedback commit and closes after deploy", async () => {
+  const validate = await readFile(new URL("../.github/workflows/validate.yml", import.meta.url), "utf8");
+  const pages = await readFile(new URL("../.github/workflows/pages.yml", import.meta.url), "utf8");
+
+  assert.match(validate, /needs: \[invalidate-stale-approval, validate\]/);
+  assert.match(validate, /needs\.validate\.result == 'success'/);
+  assert.match(validate, /pull-requests: write/);
+  assert.match(validate, /event: "APPROVE"/);
+  assert.match(validate, /Automatic approval blocked by out-of-scope files/);
+  assert.match(pages, /needs: deploy/);
+  assert.match(pages, /issues: write/);
+  assert.match(pages, /listPullRequestsAssociatedWithCommit/);
+  assert.match(pages, /feedback:status:deployed/);
+  assert.match(pages, /state_reason: "completed"/);
+});
