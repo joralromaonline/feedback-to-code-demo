@@ -25,6 +25,11 @@ test("automation approves only the validated feedback commit and closes after de
   assert.match(validate, /pull-requests: write/);
   assert.match(validate, /event: "APPROVE"/);
   assert.match(validate, /Automatic approval blocked by out-of-scope files/);
+  assert.match(validate, /deploy-approved-preview:/);
+  assert.match(validate, /needs: approve/);
+  assert.match(validate, /needs\.approve\.result == 'success'/);
+  assert.match(validate, /ref: \$\{\{ github\.event\.pull_request\.head\.sha \}\}/);
+  assert.match(validate, /actions\/deploy-pages@v4/);
   assert.match(pages, /needs: deploy/);
   assert.match(pages, /issues: write/);
   assert.match(pages, /listPullRequestsAssociatedWithCommit/);
