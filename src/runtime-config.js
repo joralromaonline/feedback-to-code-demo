@@ -1,6 +1,6 @@
 window.FEEDBACK_CONFIG = {
   enabled: true,
-  apiUrl: "https://received-keno-tribunal-tomorrow.trycloudflare.com",
+  apiUrl: "https://open-franklin-dame-mrna.trycloudflare.com",
   projectKey: "pk_demo_public_key_change_me",
   environment: "staging",
   appRevision: "demo-base"
