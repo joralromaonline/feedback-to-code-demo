@@ -76,6 +76,31 @@ jobs:
                 issue_number: issueNumber
               });
               if (issue.pull_request || issue.state !== "open") continue;
+              try {
+                await github.rest.issues.createLabel({
+                  ...context.repo,
+                  name: "feedback:status:deployed",
+                  color: "0e8a16",
+                  description: "Feedback merged and deployed successfully"
+                });
+              } catch (error) {
+                if (error.status !== 422) throw error;
+              }
+              const statusLabels = issue.labels
+                .map((label) => typeof label === "string" ? label : label.name)
+                .filter((label) => label?.startsWith("feedback:status:"));
+              for (const label of statusLabels) {
+                await github.rest.issues.removeLabel({
+                  ...context.repo,
+                  issue_number: issueNumber,
+                  name: label
+                });
+              }
+              await github.rest.issues.addLabels({
+                ...context.repo,
+                issue_number: issueNumber,
+                labels: ["feedback:status:deployed"]
+              });
               await github.rest.issues.createComment({
                 ...context.repo,
                 issue_number: issueNumber,
