@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="theme-color" content="#0b0d12">
+    <title>Meridian · Revenue intelligence</title>
+    <link rel="preconnect" href="https://unpkg.com">
+    <link rel="stylesheet" href="src/product.css">
+  </head>
+  <body>
+    <main class="product-app">
+      <aside class="sidebar" data-feedback-id="app-sidebar">
+        <a class="brand" href="#overview" aria-label="Meridian home"><span><i data-lucide="zap"></i></span><strong>meridian</strong></a>
+        <nav aria-label="Product navigation">
+          <small>Workspace</small>
+          <a class="active" href="#overview"><i data-lucide="layout-dashboard"></i><span>Overview</span><b></b></a>
+          <a href="#revenue"><i data-lucide="trending-up"></i><span>Revenue</span></a>
+          <a href="#customers"><i data-lucide="users"></i><span>Customers</span></a>
+          <a href="#transactions"><i data-lucide="credit-card"></i><span>Transactions</span></a>
+          <a href="#activity"><i data-lucide="activity"></i><span>Activity</span></a>
+          <small class="manage-label">Manage</small>
+          <a href="#settings"><i data-lucide="settings"></i><span>Settings</span></a>
+          <a href="#help"><i data-lucide="circle-help"></i><span>Help center</span></a>
+        </nav>
+        <div class="workspace" data-feedback-id="workspace-card"><span><i data-lucide="sparkles"></i></span><div><strong>Meridian Labs</strong><small>Business workspace</small></div><i data-lucide="chevron-down"></i></div>
+      </aside>
+
+      <section class="main-shell">
+        <header class="topbar" data-feedback-id="product-topbar">
+          <label class="global-search"><i data-lucide="search"></i><input aria-label="Search workspace" placeholder="Search anything…"><kbd>⌘ K</kbd></label>
+          <div class="top-actions"><button aria-label="Notifications"><i data-lucide="bell"></i></button><span></span><div class="user"><b>JR</b><div><strong>Jorge R.</strong><small>Administrator</small></div><i data-lucide="chevron-down"></i></div></div>
+        </header>
+
+        <div class="content" id="overview">
+          <header class="overview-header" data-feedback-id="overview-header">
+            <div><span class="eyebrow">FINANCE / OVERVIEW</span><h1>Revenue overview</h1><p>Track growth, recurring revenue, and account health in real time.</p></div>
+            <div class="header-actions"><button><i data-lucide="calendar-days"></i>Last 30 days<i data-lucide="chevron-down"></i></button><button class="primary" data-feedback-id="export-report"><i data-lucide="download"></i>Export report</button></div>
+          </header>
+
+          <section class="metrics" aria-label="Revenue metrics">
+            <article data-feedback-id="metric-mrr"><header><span>Monthly recurring revenue</span><i data-lucide="wallet-cards"></i></header><strong>$184,240</strong><footer><span><i data-lucide="arrow-up-right"></i>12.4%</span><small>vs. last month</small></footer></article>
+            <article data-feedback-id="metric-arr"><header><span>Annual run rate</span><i data-lucide="trending-up"></i></header><strong>$2.21M</strong><footer><span><i data-lucide="arrow-up-right"></i>8.1%</span><small>vs. last month</small></footer></article>
+            <article data-feedback-id="metric-accounts"><header><span>Active accounts</span><i data-lucide="users"></i></header><strong>1,429</strong><footer><span><i data-lucide="arrow-up-right"></i>5.7%</span><small>86 new accounts</small></footer></article>
+            <article data-feedback-id="metric-churn"><header><span>Revenue churn</span><i data-lucide="activity"></i></header><strong>2.18%</strong><footer><span class="info"><i data-lucide="arrow-down-right"></i>0.3%</span><small>improvement</small></footer></article>
+          </section>
+
+          <section class="insights" id="revenue">
+            <article class="revenue-chart" data-feedback-id="revenue-chart">
+              <header><div><span class="eyebrow">PERFORMANCE</span><h2>Recurring revenue</h2></div><div class="legend"><i></i>Actual revenue</div></header>
+              <div class="chart-value"><strong>$184.2K</strong><span><i data-lucide="arrow-up-right"></i>12.4%</span></div>
+              <div class="chart"><div class="grid-lines"><i></i><i></i><i></i><i></i></div><svg viewBox="0 0 760 190" preserveAspectRatio="none" role="img" aria-label="Upward revenue trend"><defs><linearGradient id="area" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8c7cf0" stop-opacity=".28"></stop><stop offset="1" stop-color="#8c7cf0" stop-opacity="0"></stop></linearGradient></defs><path d="M0 150 L69 132 L138 140 L207 112 L276 118 L345 88 L414 98 L483 67 L552 78 L621 43 L690 53 L760 20 L760 190 L0 190 Z"></path><polyline points="0,150 69,132 138,140 207,112 276,118 345,88 414,98 483,67 552,78 621,43 690,53 760,20"></polyline></svg><div class="chart-labels"><span>May 18</span><span>Jun 01</span><span>Jun 15</span><span>Jun 29</span><span>Jul 13</span><span>Aug 03</span></div></div>
+            </article>
+            <article class="forecast" data-feedback-id="forecast-card"><header><span><i data-lucide="sparkles"></i></span><small>AI FORECAST</small></header><h2>On track to exceed Q3 target</h2><p>Current expansion revenue puts the team 8.6% above the expected trajectory.</p><div class="progress"><div><span>Q3 progress</span><strong>78%</strong></div><i><em></em></i></div><dl><div><dt>Projected ARR</dt><dd>$2.46M</dd></div><div><dt>Confidence</dt><dd>94%</dd></div></dl><button>View full forecast<i data-lucide="arrow-up-right"></i></button></article>
+          </section>
+
+          <section class="transactions" id="transactions" data-feedback-id="transactions-panel">
+            <header><div><span class="eyebrow">LATEST ACTIVITY</span><h2>Recent transactions</h2></div><button>View all<i data-lucide="arrow-up-right"></i></button></header>
+            <div class="toolbar"><label><i data-lucide="search"></i><input id="transaction-search" placeholder="Search company…"></label><div><i data-lucide="filter"></i><select id="status-filter" aria-label="Filter transaction status"><option value="all">All statuses</option><option value="paid">Paid</option><option value="pending">Pending</option><option value="failed">Failed</option></select></div></div>
+            <div class="table-wrap"><table><thead><tr><th>Customer</th><th>Plan</th><th>Amount</th><th>Status</th><th>Date</th><th></th></tr></thead><tbody id="transactions-body"></tbody></table></div>
+          </section>
+        </div>
+      </section>
+    </main>
+    <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+    <script src="src/runtime-config.js"></script>
+    <script type="module" src="src/product.js"></script>
+    <script type="module" src="src/feedback-sdk.js"></script>
+  </body>
+</html>
