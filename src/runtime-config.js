@@ -1,0 +1,7 @@
+window.FEEDBACK_CONFIG = {
+  enabled: true,
+  apiUrl: "https://received-keno-tribunal-tomorrow.trycloudflare.com",
+  projectKey: "pk_demo_public_key_change_me",
+  environment: "staging",
+  appRevision: "demo-base"
+};
