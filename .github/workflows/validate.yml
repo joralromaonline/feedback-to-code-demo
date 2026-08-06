@@ -127,31 +127,3 @@ jobs:
               event: "APPROVE",
               body: "Automatically approved: test, lint, typecheck and build passed for this commit, and all changed files are inside the product allowlist."
             });
-
-  deploy-approved-preview:
-    name: Deploy approved PR preview
-    needs: approve
-    if: ${{ needs.approve.result == 'success' }}
-    runs-on: ubuntu-latest
-    concurrency:
-      group: feedback-approved-pages-preview
-      cancel-in-progress: false
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
-    steps:
-      - name: Checkout the exact approved commit
-        uses: actions/checkout@v6
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v4
-        with:
-          path: .
-      - name: Deploy approved preview to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
